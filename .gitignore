@@ -1,3 +1,11 @@
+# Metafor generated directory
+workspace/
+
+# Personal draft files
+draft.py
+draft.m
+
+# =====================================
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
