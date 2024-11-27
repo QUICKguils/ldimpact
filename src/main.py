@@ -48,6 +48,7 @@ mim = metafor.getMechanicalIterationManager()
 # Archiving - Save the desired quantities in .ascii files.
 # http://metafor.ltas.ulg.ac.be/dokuwiki/doc/user/results/courbes_res
 values_manager = metafor.getValuesManager()
+fac_values_manager = metafor.getFacValuesManager()
 
 # 2. DEFINE AND IMPLEMENT THE RING CLASS {{{1
 
@@ -84,36 +85,40 @@ class Ring():
         self.ri = inner_radius
         self.ro = outer_radius
 
+        point = [None] * 9
         # Inner ring points
-        point_1 = pointset.define(Ring.id_point+0, self.x-self.ri, self.y)
-        point_2 = pointset.define(Ring.id_point+1, self.x,         self.y+self.ri)
-        point_3 = pointset.define(Ring.id_point+2, self.x+self.ri, self.y)
-        point_4 = pointset.define(Ring.id_point+3, self.x,         self.y-self.ri)
+        point[1] = pointset.define(Ring.id_point+0, self.x-self.ri, self.y)
+        point[2] = pointset.define(Ring.id_point+1, self.x,         self.y+self.ri)
+        point[3] = pointset.define(Ring.id_point+2, self.x+self.ri, self.y)
+        point[4] = pointset.define(Ring.id_point+3, self.x,         self.y-self.ri)
         # Outer ring points
-        point_5 = pointset.define(Ring.id_point+4, self.x-self.ro, self.y)
-        point_6 = pointset.define(Ring.id_point+5, self.x,         self.y+self.ro)
-        point_7 = pointset.define(Ring.id_point+6, self.x+self.ro, self.y)
-        point_8 = pointset.define(Ring.id_point+7, self.x,         self.y-self.ro)
+        point[5] = pointset.define(Ring.id_point+4, self.x-self.ro, self.y)
+        point[6] = pointset.define(Ring.id_point+5, self.x,         self.y+self.ro)
+        point[7] = pointset.define(Ring.id_point+6, self.x+self.ro, self.y)
+        point[8] = pointset.define(Ring.id_point+7, self.x,         self.y-self.ro)
 
+        curve = [None] * 7
         # Half inner rings
-        curve_1 = curveset.add(Arc(Ring.id_curve,   point_1, point_2, point_3))
-        curve_2 = curveset.add(Arc(Ring.id_curve+1, point_3, point_4, point_1))
+        curve[1] = curveset.add(Arc(Ring.id_curve,   point[1], point[2], point[3]))
+        curve[2] = curveset.add(Arc(Ring.id_curve+1, point[3], point[4], point[1]))
         # Half outer rings
-        curve_3 = curveset.add(Arc(Ring.id_curve+2, point_5, point_6, point_7))
-        curve_4 = curveset.add(Arc(Ring.id_curve+3, point_7, point_8, point_5))
+        curve[3] = curveset.add(Arc(Ring.id_curve+2, point[5], point[6], point[7]))
+        curve[4] = curveset.add(Arc(Ring.id_curve+3, point[7], point[8], point[5]))
         # Cutting lines
-        curve_5 = curveset.add(Line(Ring.id_curve+4, point_5, point_1))
-        curve_6 = curveset.add(Line(Ring.id_curve+5, point_3, point_7))
+        curve[5] = curveset.add(Line(Ring.id_curve+4, point[5], point[1]))
+        curve[6] = curveset.add(Line(Ring.id_curve+5, point[3], point[7]))
 
+        wire = [None] * 3
         # Upper half ring
-        wire_1 = wireset.add(Wire(Ring.id_wire,   [curve_5, curve_1, curve_6, curve_3]))
+        wire[1] = wireset.add(Wire(Ring.id_wire,   [curve[5], curve[1], curve[6], curve[3]]))
         # Lower half ring
-        wire_2 = wireset.add(Wire(Ring.id_wire+1, [curve_5, curve_4, curve_6, curve_2]))
+        wire[2] = wireset.add(Wire(Ring.id_wire+1, [curve[5], curve[4], curve[6], curve[2]]))
 
+        side = [None] * 3
         # Upper half ring
-        side_1 = sideset.add(Side(Ring.id_side,   [wire_1]))
+        side[1] = sideset.add(Side(Ring.id_side,   [wire[1]]))
         # Lower half ring
-        side_2 = sideset.add(Side(Ring.id_side+1, [wire_2]))
+        side[2] = sideset.add(Side(Ring.id_side+1, [wire[2]]))
 
         # Plane-strain problem, in the (O,x,y) plane.
         geometry.setDimPlaneStrain(1.0)
@@ -125,27 +130,23 @@ class Ring():
         Ring.id_side  += 2
 
         # Keep geometry elements callable
-        self.curve_1 = curve_1
-        self.curve_2 = curve_2
-        self.curve_3 = curve_3
-        self.curve_4 = curve_4
-        self.curve_5 = curve_5
-        self.curve_6 = curve_6
-        self.side_1 = side_1
-        self.side_2 = side_2
+        self.point = point
+        self.curve = curve
+        self.wire = wire
+        self.side = side
 
     def build_mesh(self, nelem_radial=5, nelem_contour=80):
         # Meshing the Curve objects
-        SimpleMesher1D(self.curve_1).execute(nelem_contour)
-        SimpleMesher1D(self.curve_2).execute(nelem_contour)
-        SimpleMesher1D(self.curve_3).execute(nelem_contour)
-        SimpleMesher1D(self.curve_4).execute(nelem_contour)
-        SimpleMesher1D(self.curve_5).execute(nelem_radial)
-        SimpleMesher1D(self.curve_6).execute(nelem_radial)
+        SimpleMesher1D(self.curve[1]).execute(nelem_contour)
+        SimpleMesher1D(self.curve[2]).execute(nelem_contour)
+        SimpleMesher1D(self.curve[3]).execute(nelem_contour)
+        SimpleMesher1D(self.curve[4]).execute(nelem_contour)
+        SimpleMesher1D(self.curve[5]).execute(nelem_radial)
+        SimpleMesher1D(self.curve[6]).execute(nelem_radial)
 
         # Meshing the Side objects
-        TransfiniteMesher2D(self.side_1).execute(True)
-        TransfiniteMesher2D(self.side_2).execute(True)
+        TransfiniteMesher2D(self.side[1]).execute(True)
+        TransfiniteMesher2D(self.side[2]).execute(True)
 
     def build_constitutive_material(
             self, constitutive_material,
@@ -170,8 +171,8 @@ class Ring():
 
         # Build the continuum of elements
         field_app = FieldApplicator(self.id_field)
-        field_app.push(self.side_1)
-        field_app.push(self.side_2)
+        field_app.push(self.side[1])
+        field_app.push(self.side[2])
         field_app.addProperty(elem_prop)
         domain.getInteractionSet().add(field_app)
 
@@ -206,14 +207,14 @@ class Ring():
         contact_22 = ScContactInteraction(Ring.id_interaction+1)
         contact_12 = DdContactInteraction(Ring.id_interaction+2)
 
-        contact_11.push(self.curve_1)
+        contact_11.push(self.curve[1])
         contact_11.addProperty(self.contact_elem)
 
-        contact_22.push(self.curve_2)
+        contact_22.push(self.curve[2])
         contact_22.addProperty(self.contact_elem)
 
-        contact_12.setTool(self.curve_1)
-        contact_12.push(self.curve_2)
+        contact_12.setTool(self.curve[1])
+        contact_12.push(self.curve[2])
         contact_12.addProperty(self.contact_elem)
 
         domain.getInteractionSet().add(contact_11)
@@ -305,20 +306,20 @@ def build_outer_outer_contact(r1: Ring, r2: Ring):
     contact_34 = DdContactInteraction(Ring.id_interaction+2)
     contact_43 = DdContactInteraction(Ring.id_interaction+3)
 
-    contact_33.setTool(r1.curve_3)
-    contact_33.push(r2.curve_3)
+    contact_33.setTool(r1.curve[3])
+    contact_33.push(r2.curve[3])
     contact_33.addProperty(r1.contact_elem)
 
-    contact_44.setTool(r1.curve_4)
-    contact_44.push(r2.curve_4)
+    contact_44.setTool(r1.curve[4])
+    contact_44.push(r2.curve[4])
     contact_44.addProperty(r1.contact_elem)
 
-    contact_34.setTool(r1.curve_3)
-    contact_34.push(r2.curve_4)
+    contact_34.setTool(r1.curve[3])
+    contact_34.push(r2.curve[4])
     contact_34.addProperty(r1.contact_elem)
 
-    contact_43.setTool(r1.curve_4)
-    contact_43.push(r2.curve_3)
+    contact_43.setTool(r1.curve[4])
+    contact_43.push(r2.curve[3])
     contact_43.addProperty(r1.contact_elem)
 
     domain.getInteractionSet().add(contact_33)
@@ -334,20 +335,20 @@ def build_outer_inner_contact(outer: Ring, inner: Ring):
     contact_14 = DdContactInteraction(Ring.id_interaction+2)
     contact_23 = DdContactInteraction(Ring.id_interaction+3)
 
-    contact_13.setTool(outer.curve_1)
-    contact_13.push(inner.curve_3)
+    contact_13.setTool(outer.curve[1])
+    contact_13.push(inner.curve[3])
     contact_13.addProperty(inner.contact_elem)
 
-    contact_24.setTool(outer.curve_2)
-    contact_24.push(inner.curve_4)
+    contact_24.setTool(outer.curve[2])
+    contact_24.push(inner.curve[4])
     contact_24.addProperty(inner.contact_elem)
 
-    contact_14.setTool(outer.curve_1)
-    contact_14.push(inner.curve_4)
+    contact_14.setTool(outer.curve[1])
+    contact_14.push(inner.curve[4])
     contact_14.addProperty(inner.contact_elem)
 
-    contact_23.setTool(outer.curve_2)
-    contact_23.push(inner.curve_3)
+    contact_23.setTool(outer.curve[2])
+    contact_23.push(inner.curve[3])
     contact_23.addProperty(inner.contact_elem)
 
     domain.getInteractionSet().add(contact_13)
@@ -368,16 +369,16 @@ ring_3.build_self_contact()
 # 5. BOUNDARY CONDITIONS AND INITIAL CONDITIONS {{{1
 
 # Dirichlet condition on outer side of ring_3
-domain.getLoadingSet().define(ring_3.curve_3, Field1D(TX, RE), 0.0)
-domain.getLoadingSet().define(ring_3.curve_3, Field1D(TY, RE), 0.0)
-domain.getLoadingSet().define(ring_3.curve_4, Field1D(TX, RE), 0.0)
-domain.getLoadingSet().define(ring_3.curve_4, Field1D(TY, RE), 0.0)
+domain.getLoadingSet().define(ring_3.curve[3], Field1D(TX, RE), 0.0)
+domain.getLoadingSet().define(ring_3.curve[3], Field1D(TY, RE), 0.0)
+domain.getLoadingSet().define(ring_3.curve[4], Field1D(TX, RE), 0.0)
+domain.getLoadingSet().define(ring_3.curve[4], Field1D(TY, RE), 0.0)
 
 def set_initial_speed(ring: Ring, v0_x, v0_y):
-    initial_conditions.define(ring.side_1, Field1D(TX, GV), v0_x)
-    initial_conditions.define(ring.side_1, Field1D(TY, GV), v0_y)
-    initial_conditions.define(ring.side_2, Field1D(TX, GV), v0_x)
-    initial_conditions.define(ring.side_2, Field1D(TY, GV), v0_y)
+    initial_conditions.define(ring.side[1], Field1D(TX, GV), v0_x)
+    initial_conditions.define(ring.side[1], Field1D(TY, GV), v0_y)
+    initial_conditions.define(ring.side[2], Field1D(TX, GV), v0_x)
+    initial_conditions.define(ring.side[2], Field1D(TY, GV), v0_y)
 
 # Give initial speed to the inner ring 1.
 # INFO: reference paper values: (30mm/ms, -30mm/ms)
@@ -395,7 +396,7 @@ time_step = 1E-5
 tsm.setInitialTime(initial_time, time_step)
 
 # Intermediate and/or final time
-final_time = 5E-4
+final_time = 3E-4
 # WARN:
 # Low enough to make sure that the rings ne se traversent pas.
 # Lier ça à la vitesse d'impact. Lier à la profondeur de contact, pour bien faire.
@@ -409,12 +410,20 @@ mim.setResidualTolerance(res_tol)
 
 # 7. ARCHIVING {{{1
 
-# Time
-values_manager.add(1, MiscValueExtractor(metafor, EXT_T), 'time')
+id_fac = 1
 
-# Position of the nodes
-value_extractor = DbNodalValueExtractor(ring_1.curve_1, Field1D(TX, RE), sOp=SortByKsi0(ring_1.curve_1), maxV=-1)
-values_manager.add(2, value_extractor, 'TX_r1_curve1')
+for id_ring, this_ring in enumerate([ring_1, ring_2, ring_3]):
+    for id_curve, this_curve in enumerate(this_ring.curve[1:]):
+        # Position of the nodes
+        AB_TX_extractor = DbNodalValueExtractor(this_curve, Field1D(TX, AB), sOp=SortByKsi0(this_curve), maxV=-1)
+        AB_TY_extractor = DbNodalValueExtractor(this_curve, Field1D(TY, AB), sOp=SortByKsi0(this_curve), maxV=-1)
+        RE_TX_extractor = DbNodalValueExtractor(this_curve, Field1D(TX, RE), sOp=SortByKsi0(this_curve), maxV=-1)
+        RE_TY_extractor = DbNodalValueExtractor(this_curve, Field1D(TY, RE), sOp=SortByKsi0(this_curve), maxV=-1)
+        fac_values_manager.add(id_fac+0, AB_TX_extractor, f'AB_TX_curve{id_curve}_ring{id_ring}')
+        fac_values_manager.add(id_fac+1, AB_TY_extractor, f'AB_TY_curve{id_curve}_ring{id_ring}')
+        fac_values_manager.add(id_fac+2, RE_TX_extractor, f'RE_TX_curve{id_curve}_ring{id_ring}')
+        fac_values_manager.add(id_fac+3, RE_TY_extractor, f'RE_TY_curve{id_curve}_ring{id_ring}')
+        id_fac += 4
 
 # DEBUG OPTIONS {{{1
 
