@@ -1,3 +1,5 @@
+import pathlib
+
 from wrap import *
 
 # Instantiate the main Metafor and Domain objects
@@ -42,6 +44,7 @@ laws = domain.getMaterialLawSet()
 initial_conditions = metafor.getInitialConditionSet()
 
 # Time integration
+# http://metafor.ltas.ulg.ac.be/dokuwiki/doc/user/integration/general/time_step
 tsm = metafor.getTimeStepManager()
 mim = metafor.getMechanicalIterationManager()
 
@@ -409,21 +412,40 @@ res_tol = 1E-4  # default is 1E-4 (chap. 11)
 mim.setResidualTolerance(res_tol)
 
 # 7. ARCHIVING {{{1
+# TODO: better organize this archiving section
 
+# Keep track of the number of fac values managers that are instantiated
 id_fac = 1
 
-for id_ring, this_ring in enumerate([ring_1, ring_2, ring_3]):
-    for id_curve, this_curve in enumerate(this_ring.curve[1:]):
-        # Position of the nodes
-        AB_TX_extractor = DbNodalValueExtractor(this_curve, Field1D(TX, AB), sOp=SortByKsi0(this_curve), maxV=-1)
-        AB_TY_extractor = DbNodalValueExtractor(this_curve, Field1D(TY, AB), sOp=SortByKsi0(this_curve), maxV=-1)
-        RE_TX_extractor = DbNodalValueExtractor(this_curve, Field1D(TX, RE), sOp=SortByKsi0(this_curve), maxV=-1)
-        RE_TY_extractor = DbNodalValueExtractor(this_curve, Field1D(TY, RE), sOp=SortByKsi0(this_curve), maxV=-1)
-        fac_values_manager.add(id_fac+0, AB_TX_extractor, f'AB_TX_curve{id_curve}_ring{id_ring}')
-        fac_values_manager.add(id_fac+1, AB_TY_extractor, f'AB_TY_curve{id_curve}_ring{id_ring}')
-        fac_values_manager.add(id_fac+2, RE_TX_extractor, f'RE_TX_curve{id_curve}_ring{id_ring}')
-        fac_values_manager.add(id_fac+3, RE_TY_extractor, f'RE_TY_curve{id_curve}_ring{id_ring}')
-        id_fac += 4
+# Find the root and resource directory of the project
+ROOT_DIR = pathlib.Path(__file__).parent.parent
+# Define the resource directory (saved Metafor results)
+RES_DIR = ROOT_DIR / "res"
+
+# Name of the next simulation to save
+sim_name = "testsave"
+# Define the next simulation directory,
+# and raises a FileExistsError if we try to overwrite
+# a previous save with the same name
+sim_dir = RES_DIR / sim_name
+sim_dir.mkdir(parents=True, exist_ok=False)
+
+# Dict gathering the nodal fields to archive
+dbnodal_fields = {
+    "AB_TX": Field1D(TX, AB),
+    "AB_TY": Field1D(TY, AB),
+    "RE_TX": Field1D(TX, RE),
+    "RE_TY": Field1D(TY, RE),
+}
+
+# Save the desired nodal fields for the whole geometry
+for id_field, field in dbnodal_fields.items():
+    for id_ring, ring in enumerate([ring_1, ring_2, ring_3]):
+        for id_curve, curve in enumerate(ring.curve[1:]):
+            extractor = DbNodalValueExtractor(curve, field, sOp=SortByKsi0(curve), maxV=-1)
+            id_extractor = f'{id_field}_curve{id_curve+1}_ring{id_ring+1}'
+            fac_values_manager.add(id_fac, extractor, str(sim_dir / id_extractor))
+            id_fac += 1
 
 # DEBUG OPTIONS {{{1
 
