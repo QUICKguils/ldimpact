@@ -1,17 +1,18 @@
-function pprocess(RunArg)
-% PPROCESS  Trigger all the post-processing code.
+function main(RunArg)
+% MAIN  Trigger all the post-processing code.
 %
 % Argument:
-%   RunArg (struct) -- Optional code execution parameters, with fields:
-%     outs       (1xN char)   -- Output options.
+%   RunArg (struct) -- Code execution parameters, with fields:
+%     sname (str) -- Simulation name.
+%     outs (1xN char) -- Output options.
 %       'p' -> Enable [P]lots creation.
 %       's' -> [S]ave generated data.
 %
 % The default values used to run this function
-% are stored in src/pprocess/pprocess_defaults.m
+% are stored in src/pprocess/load_defaults.m
 
 
-%% Set program initial state
+%% Set the program initial state
 
 % Close previous plots
 close all;
@@ -19,11 +20,8 @@ close all;
 % Find the root directory of the project
 rootDirectory = fullfile(fileparts(mfilename('fullpath')), "../..");
 
-% Find the metafor directory (last simulation results)
-metaforDirectory = fullfile(rootDirectory, "src/workspace/main");
-
 % Define the resource directory (saved simulation results)
-resDirectory = fullfile(rootDirectory, "res/workspace");
+resDirectory = fullfile(rootDirectory, "res");
 if ~isfolder(resDirectory)
 	mkdir(resDirectory);
 end
@@ -37,18 +35,12 @@ end
 % Add all the post-processing matlab files in the Matlab path
 addpath(genpath(fullfile(rootDirectory, "src")));
 
-% Save the project structure
-Path.root    = rootDirectory;
-Path.metafor = metaforDirectory;
-Path.res     = resDirectory;
-Path.out     = outDirectory;
+%% Set the code execution parameters
 
-%% Options setting
+% Fetch the defaults execution parameters
+Default = load_defaults();
 
-% Fetch the defaults execution parameters.
-Default = pprocess_defaults();
-
-% Overwrite these defaults with user input.
+% Overwrite these defaults with user input
 switch nargin
 	case 0
 		RunArg = Default;
@@ -62,12 +54,17 @@ switch nargin
 		error("Wrong number of input parameters.");
 end
 
+% Save the project structure in the running arguments
+RunArg.rootDir_ = rootDirectory;
+RunArg.resDir_  = resDirectory;
+RunArg.outDir_  = outDirectory;
+
 %% Execute the post-processing code
 
-%% Save generated data
+%% Save the generated data
 
 if contains(RunArg.outs, 's')
-	save(fullfile(outDirectory, "projectPath.mat"), "-struct", "Path");
+	save(fullfile(outDirectory, "runningArguments.mat"), "-struct", "RunArg");
 end
 
 end

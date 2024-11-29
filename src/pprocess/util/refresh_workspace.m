@@ -3,6 +3,6 @@
 % Find the output results directory
 outDirectory = fullfile(fileparts(mfilename('fullpath')), "../../../out");
 
-Path = load(fullfile(outDirectory, "projectPath.mat"));
+RunArg = load(fullfile(outDirectory, "runningArguments.mat"));
 
 clear outDirectory;
