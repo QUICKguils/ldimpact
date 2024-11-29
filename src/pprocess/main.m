@@ -61,10 +61,19 @@ RunArg.outDir_  = outDirectory;
 
 %% Execute the post-processing code
 
+Geo = extract_geometry(RunArg, 6);
+
+Displ = compute_displacements(RunArg, Geo);
+
+Diam = compute_diameters(Displ);
+
 %% Save the generated data
 
 if contains(RunArg.outs, 's')
-	save(fullfile(outDirectory, "runningArguments.mat"), "-struct", "RunArg");
+	save(fullfile(outDirectory, "runningArguments.mat"), "RunArg");
+	save(fullfile(outDirectory, "geometry.mat"),         "Geo");
+	save(fullfile(outDirectory, "displacements.mat"),    "Displ");
+	save(fullfile(outDirectory, "diameters.mat"),        "Diam");
 end
 
 end

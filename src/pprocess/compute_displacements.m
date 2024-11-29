@@ -3,9 +3,9 @@ function Displ = compute_displacements(RunArg, Geo)
 %
 % Arguments:
 %   RunArg (struct) -- Code execution parameters.
-%   Geo    (struct) -- Geometrical data of the whole problem.
+%   Geo    (cell)   -- Geometrical data of the whole problem.
 % Return:
-%   Displ (struct) -- Displacements of the rings.
+%   Displ (cell) -- Displacements of the rings.
 
 Displ = cell(size(Geo));
 
@@ -21,7 +21,8 @@ for iRing = 1:numel(Geo)
 end
 
 if contains(RunArg.outs, 'p')
-	plot_displacements(Geo, Displ);
+	plotRef = true;
+	plot_displacements(Geo, Displ, plotRef);
 end
 end
 
@@ -30,9 +31,9 @@ function plot_displacements(Geo, Displ, plotRef)
 % PLOT_DISPLACEMENTS  Plot the displacements of the geometry.
 %
 % Arguments:
-%   Geo     (struct) -- Geometrical data of the whole problem.
-%   Displ   (struct) -- Displacements of the rings.
-%   plotRef (bool)   -- Plot the reference configuration.
+%   Geo     (cell) -- Geometrical data of the whole problem.
+%   Displ   (cell) -- Displacements of the rings.
+%   plotRef (bool) -- Plot the reference configuration.
 
 figure("WindowStyle", "docked");
 axis equal;

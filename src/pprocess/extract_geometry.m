@@ -5,12 +5,12 @@
 
 function Geo = extract_geometry(RunArg, iFac)
 % EXTRACT_GEOMETRY Extract the whole geometry, for the given FAC step.
-% 
+%
 % Arguments:
 %   RunArg (struct) -- Code execution parameters.
 %   iFac   (int)    -- Numeric label of the FAC step.
 % Return:
-%   Geo (struct) -- Geometrical data of the whole problem.
+%   Geo (cell) -- Geometrical data of the whole problem.
 
 simDir = fullfile(RunArg.resDir_, "workspace", RunArg.sname);
 
@@ -24,9 +24,12 @@ end
 function GeoRing = extract_ring_geometry(simDir, iRing, iFac)
 % EXTRACT_RING_GEOMETRY  Extract geometry of one ring.
 %
-% simDir (str) -- Path of the simulation results.
-% iRing  (int) -- Numeric label of the ring.
-% iFac   (int) -- Numeric label of the FAC step.
+% Arguments:
+%   simDir (str) -- Path of the simulation results.
+%   iRing  (int) -- Numeric label of the ring.
+%   iFac   (int) -- Numeric label of the FAC step.
+% Return:
+%   GeoRing (cell) -- Geometrical data of the ring.
 
 GeoRing = cell(1, 6);
 
@@ -38,10 +41,13 @@ end
 function GeoCurve = extract_curve_geometry(simDir, iRing, iCurve, iFac)
 % EXTRACT_CURVE_GEOMETRY  Extract geometry of one curve.
 %
-% simPath (str) -- Path of the simulation results.
-% iRing   (int) -- Numeric label of the ring.
-% iCurve  (int) -- Numeric label of the curve.
-% iFac    (int) -- Numeric label of the FAC step.
+% Arguments:
+%   simPath (str) -- Path of the simulation results.
+%   iRing   (int) -- Numeric label of the ring.
+%   iCurve  (int) -- Numeric label of the curve.
+%   iFac    (int) -- Numeric label of the FAC step.
+% Return:
+%   GeoCurve (cell) -- Geometrical data of the curve.
 
 thisCurve = "_curve" + iCurve + "_ring" + iRing;
 
