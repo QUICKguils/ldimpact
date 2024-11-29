@@ -414,21 +414,9 @@ mim.setResidualTolerance(res_tol)
 # 7. ARCHIVING {{{1
 # TODO: better organize this archiving section
 
-# Keep track of the number of fac values managers that are instantiated
+# Keep track of the number of fac values managers
+# that are instantiated
 id_fac = 1
-
-# Find the root and resource directory of the project
-ROOT_DIR = pathlib.Path(__file__).parent.parent
-# Define the resource directory (saved Metafor results)
-RES_DIR = ROOT_DIR / "res"
-
-# Name of the next simulation to save
-sim_name = "testsave"
-# Define the next simulation directory,
-# and raises a FileExistsError if we try to overwrite
-# a previous save with the same name
-sim_dir = RES_DIR / sim_name
-sim_dir.mkdir(parents=True, exist_ok=False)
 
 # Dict gathering the nodal fields to archive
 dbnodal_fields = {
@@ -444,7 +432,7 @@ for id_field, field in dbnodal_fields.items():
         for id_curve, curve in enumerate(ring.curve[1:]):
             extractor = DbNodalValueExtractor(curve, field, sOp=SortByKsi0(curve), maxV=-1)
             id_extractor = f'{id_field}_curve{id_curve+1}_ring{id_ring+1}'
-            fac_values_manager.add(id_fac, extractor, str(sim_dir / id_extractor))
+            fac_values_manager.add(id_fac, extractor, id_extractor)
             id_fac += 1
 
 # DEBUG OPTIONS {{{1

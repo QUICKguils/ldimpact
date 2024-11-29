@@ -13,16 +13,22 @@ function pprocess(RunArg)
 
 %% Set program initial state
 
-% Close previous plots.
+% Close previous plots
 close all;
 
 % Find the root directory of the project
 rootDirectory = fullfile(fileparts(mfilename('fullpath')), "../..");
 
-% Find the resource directory (saved Metafor data)
-resDirectory = fullfile(rootDirectory, "res");
+% Find the simulation directory (last simulation results)
+simDirectory = fullfile(rootDirectory, "src/workspace/main");
 
-% Create the untracked output directory, if absent.
+% Define the resource directory (saved simulation results)
+resDirectory = fullfile(rootDirectory, "res");
+if ~isfolder(resDirectory)
+	mkdir(resDirectory);
+end
+
+% Define the output directory (saved post-processing results)
 outDirectory = fullfile(rootDirectory, "out");
 if ~isfolder(outDirectory)
 	mkdir(outDirectory);
@@ -30,6 +36,12 @@ end
 
 % Add all the post-processing matlab files in the Matlab path
 addpath(genpath(fullfile(rootDirectory, "src")));
+
+% Save the project structure
+Path.root = rootDirectory;
+Path.sim  = simDirectory;
+Path.res  = resDirectory;
+Path.out  = outDirectory;
 
 %% Options setting
 
@@ -54,8 +66,8 @@ end
 
 %% Save generated data
 
-if contains(RunArg.opts, 's')
-% 	save(fullfile(resDirectory, "runArguments.mat"), "-struct", "RunArg");
+if contains(RunArg.outs, 's')
+	save(fullfile(outDirectory, "projectPath.mat"), "-struct", "Path");
 end
 
 end
