@@ -11,6 +11,9 @@ out/
 draft.py
 draft.m
 
+# Matlab draft files
+*.asv
+
 # =====================================
 # Byte-compiled / optimized / DLL files
 __pycache__/
