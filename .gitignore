@@ -1,5 +1,8 @@
-# Metafor generated directory
+# Last simulation result
 workspace/
+
+# Matlab post-processing results
+out/
 
 # Personal draft files
 draft.py
