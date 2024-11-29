@@ -1,21 +1,49 @@
-function extract_geometry()
-%EXTRACT_GEOMETRY 
+% TODO:
+% - number of rings and curves are hardcoded, maybe create a global struct.
 
-re_tx = load("src\workspace\main\RE_TX_r2_curve1.ascii");
-re_ty = load("src\workspace\main\RE_TY_r2_curve1.ascii");
-AB_tx = load("src\workspace\main\AB_TX_r2_curve1.ascii");
-ab_tx = load("src\workspace\main\AB_TX_r2_curve1.ascii");
-ab_ty = load("src\workspace\main\AB_TY_r2_curve1.ascii");
-re_tx = load("src\workspace\main\RE_TX_r2_curve1.ascii");
-re_ty = load("src\workspace\main\RE_TY_r2_curve1.ascii");
-ab_tx = load("src\workspace\main\AB_TX_r2_curve1.ascii");
-ab_ty = load("src\workspace\main\AB_TY_r2_curve1.ascii");
-displ_tx = ab_tx(1, :) + re_tx(end, :);
-displ_ty = ab_ty(1, :) + re_ty(end, :);
-plot(ab_tx(1, :), ab_ty(1, :))
-axis equal
-hold on
-plot(displ_tx, displ_ty)
+function Geo = extract_geometry(Path, simName, iFac)
+%EXTRACT_GEOMETRY Extract the whole geometry, for the given FAC step.
 
+simPath = fullfile(Path.res, simName);
+
+Geo = cell(1, 3);
+
+for iRing = 1:size(Geo, 2)
+	Geo{iRing} = extract_ring_geometry(simPath, iRing, iFac);
+end
 end
 
+function GeoRing = extract_ring_geometry(simPath, iRing, iFac)
+% EXTRACT_RING_GEOMETRY  Extract geometry of one ring, for one simulation.
+%
+% simPath (str) -- File name of the simulation, saved under Path.res.
+% iRing   (int) -- Numeric label of the ring.
+% iFac    (int) -- Numeric label of the FAC step.
+
+GeoRing = cell(1, 6);
+
+for iCurve = 1:size(GeoRing, 2)
+	GeoRing{iCurve} = extract_curve_geometry(simPath, iRing, iCurve, iFac);
+end
+end
+
+function CurveRing = extract_curve_geometry(simPath, iRing, iCurve, iFac)
+% EXTRACT_CURVE_GEOMETRY  Extract geometry of one curve, for one simulation.
+%
+% simPath (str) -- File name of the simulation, saved under Path.res.
+% iRing   (int) -- Numeric label of the ring.
+% iCurve  (int) -- Numeric label of the curve.
+% iFac    (int) -- Numeric label of the FAC step.
+
+thisCurve = "_curve" + iCurve + "_ring" + iRing;
+
+tx_re_allfac = load(fullfile(simPath, "RE_TX" + thisCurve + ".ascii"));
+tx_ab_allfac = load(fullfile(simPath, "AB_TX" + thisCurve + ".ascii"));
+ty_re_allfac = load(fullfile(simPath, "RE_TY" + thisCurve + ".ascii"));
+ty_ab_allfac = load(fullfile(simPath, "AB_TY" + thisCurve + ".ascii"));
+
+CurveRing.tx.re = tx_re_allfac(iFac, :);
+CurveRing.tx.ab = tx_ab_allfac(iFac, :);
+CurveRing.ty.re = ty_re_allfac(iFac, :);
+CurveRing.ty.ab = ty_ab_allfac(iFac, :);
+end

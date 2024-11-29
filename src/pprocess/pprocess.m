@@ -19,8 +19,8 @@ close all;
 % Find the root directory of the project
 rootDirectory = fullfile(fileparts(mfilename('fullpath')), "../..");
 
-% Find the simulation directory (last simulation results)
-simDirectory = fullfile(rootDirectory, "src/workspace/main");
+% Find the metafor directory (last simulation results)
+metaforDirectory = fullfile(rootDirectory, "src/workspace/main");
 
 % Define the resource directory (saved simulation results)
 resDirectory = fullfile(rootDirectory, "res");
@@ -38,10 +38,10 @@ end
 addpath(genpath(fullfile(rootDirectory, "src")));
 
 % Save the project structure
-Path.root = rootDirectory;
-Path.sim  = simDirectory;
-Path.res  = resDirectory;
-Path.out  = outDirectory;
+Path.root    = rootDirectory;
+Path.metafor = metaforDirectory;
+Path.res     = resDirectory;
+Path.out     = outDirectory;
 
 %% Options setting
 
