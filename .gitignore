@@ -1,5 +1,8 @@
-# Last simulation result
+# Last simulation results
 workspace/
+
+# Saved simulation results
+res/
 
 # Matlab post-processing results
 out/
