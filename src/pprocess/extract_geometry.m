@@ -8,7 +8,7 @@ simPath = fullfile(Path.res, simName);
 
 Geo = cell(1, 3);
 
-for iRing = 1:size(Geo, 2)
+for iRing = 1:numel(Geo)
 	Geo{iRing} = extract_ring_geometry(simPath, iRing, iFac);
 end
 end
@@ -22,7 +22,7 @@ function GeoRing = extract_ring_geometry(simPath, iRing, iFac)
 
 GeoRing = cell(1, 6);
 
-for iCurve = 1:size(GeoRing, 2)
+for iCurve = 1:numel(GeoRing)
 	GeoRing{iCurve} = extract_curve_geometry(simPath, iRing, iCurve, iFac);
 end
 end

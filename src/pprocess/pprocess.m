@@ -23,7 +23,7 @@ rootDirectory = fullfile(fileparts(mfilename('fullpath')), "../..");
 metaforDirectory = fullfile(rootDirectory, "src/workspace/main");
 
 % Define the resource directory (saved simulation results)
-resDirectory = fullfile(rootDirectory, "res");
+resDirectory = fullfile(rootDirectory, "res/workspace");
 if ~isfolder(resDirectory)
 	mkdir(resDirectory);
 end

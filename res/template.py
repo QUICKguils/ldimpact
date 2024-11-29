@@ -1,4 +1,12 @@
-import pathlib
+"""template -- Metafor description file template.
+
+This template is used as a reference Metafor description file,
+for running different simulations of the three-rings impact problem.
+
+For each of the simulations that were carried out, this file is copied
+in the res/ directory, under an appropriate name. This file is then
+modified accordingly to the parameters of the desired problem.
+"""
 
 from wrap import *
 
