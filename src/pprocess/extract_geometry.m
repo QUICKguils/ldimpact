@@ -1,9 +1,9 @@
 % TODO:
 % - maybe don't isolate each iFac: return them all in the same Geo structure.
-% - number of rings and curves are hardcoded, maybe create a global struct.
+% - number of rings and curves are hardcoded, maybe create a global prop struct.
 % - not efficient load file each time, if we have to iterate over iFac.
 
-function Geo = extract_geometry(RunArg, iFac)
+function Geo = extract_geometry(RunArg, varargin)
 % EXTRACT_GEOMETRY Extract the whole geometry, for the given FAC step.
 %
 % Arguments:
@@ -11,6 +11,13 @@ function Geo = extract_geometry(RunArg, iFac)
 %   iFac   (int)    -- Numeric label of the FAC step.
 % Return:
 %   Geo (cell) -- Geometrical data of the whole problem.
+
+% Set default value for optional inputs.
+optargs = {6};  % TODO: should dynamically depends on the nFac sample
+% Overwrite default value of optional inputs.
+optargs(1:numel(varargin)) = varargin;
+% Place optional args in memorable variable names.
+[iFac] = optargs{:};
 
 simDir = fullfile(RunArg.resDir_, "workspace", RunArg.sname);
 

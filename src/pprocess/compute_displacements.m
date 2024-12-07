@@ -41,10 +41,11 @@ hold on;
 
 for iRing = 1:numel(Displ)
 	for iCurve = 1:numel(Displ{iRing})
-		plot(Displ{iRing}{iCurve}.tx, Displ{iRing}{iCurve}.ty, 'Color', [240, 127, 060]/255, 'LineWidth', 1);
 		if plotRef
-			plot(Geo{iRing}{iCurve}.tx.ab, Geo{iRing}{iCurve}.ty.ab, 'Color', [0, 112, 127]/255, 'LineWidth', 1);
+			plot(Geo{iRing}{iCurve}.tx.ab, Geo{iRing}{iCurve}.ty.ab, 'Color', [181, 180, 169]/255, 'LineWidth', 1);
 		end
+		plot(Displ{iRing}{iCurve}.tx, Displ{iRing}{iCurve}.ty, 'Color', [0, 112, 127]/255, 'LineWidth', 1);
+
 	end
 end
 

@@ -61,7 +61,7 @@ RunArg.outDir_  = outDirectory;
 
 %% Execute the post-processing code
 
-Geo = extract_geometry(RunArg, 6);
+Geo = extract_geometry(RunArg);
 
 Displ = compute_displacements(RunArg, Geo);
 
