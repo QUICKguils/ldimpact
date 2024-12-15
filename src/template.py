@@ -408,11 +408,17 @@ tsm.setInitialTime(initial_time, time_step)
 
 # Intermediate and/or final time
 final_time = 3E-4
+
 # WARN:
 # Low enough to make sure that the rings ne se traversent pas.
 # Lier ça à la vitesse d'impact. Lier à la profondeur de contact, pour bien faire.
 max_time_step = 1E-4
-n_intermediate = 5
+
+# Number of intemediate simulation state to save.
+# Those are saved in compressed bfac.gz files.
+n_intermediate = 0
+
+# Here, next specified time is just the final time
 tsm.setNextTime(final_time, n_intermediate, max_time_step)
 
 # Set the residual tolerance
@@ -422,9 +428,9 @@ mim.setResidualTolerance(res_tol)
 # 7. ARCHIVING {{{1
 # TODO: better organize this archiving section
 
-# Keep track of the number of fac values managers
-# that are instantiated
-id_fac = 1
+# Keep track of the number of values managers
+# and fac values managers that are instantiated
+id_valm = 1
 
 # Dict gathering the nodal fields to archive
 dbnodal_fields = {
@@ -440,8 +446,9 @@ for id_field, field in dbnodal_fields.items():
         for id_curve, curve in enumerate(ring.curve[1:]):
             extractor = DbNodalValueExtractor(curve, field, sOp=SortByKsi0(curve), maxV=-1)
             id_extractor = f'{id_field}_curve{id_curve+1}_ring{id_ring+1}'
-            fac_values_manager.add(id_fac, extractor, id_extractor)
-            id_fac += 1
+            # fac_values_manager.add(id_valm, extractor, id_extractor)
+            values_manager.add(id_valm, extractor, id_extractor)
+            id_valm += 1
 
 # DEBUG OPTIONS {{{1
 

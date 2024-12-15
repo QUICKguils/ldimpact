@@ -1,15 +1,11 @@
-function main(RunArg)
+function main
 % MAIN  Trigger all the post-processing code.
-%
-% Argument:
-%   RunArg (struct) -- Code execution parameters, with fields:
-%     sname (str) -- Simulation name.
-%     outs (1xN char) -- Output options.
-%       'p' -> Enable [P]lots creation.
-%       's' -> [S]ave generated data.
 %
 % The default values used to run this function
 % are stored in src/pprocess/load_defaults.m
+%
+% The user can override these parameters by completing
+% the configuration file stored in src/pprocess/set_running_arguments.m
 
 
 %% Set the program initial state
@@ -40,18 +36,14 @@ addpath(genpath(fullfile(rootDirectory, "src")));
 % Fetch the defaults execution parameters
 Default = load_defaults();
 
+% Fetch the user config file
+RunArg = set_running_arguments();
+
 % Overwrite these defaults with user input
-switch nargin
-	case 0
-		RunArg = Default;
-	case 1
-		for fn = fieldnames(Default)'
-			if ~isfield(RunArg, fn)
-				RunArg.(fn{:}) = Default.(fn{:});
-			end
-		end
-	otherwise
-		error("Wrong number of input parameters.");
+for fn = fieldnames(Default)'
+	if ~isfield(RunArg, fn)
+		RunArg.(fn{:}) = Default.(fn{:});
+	end
 end
 
 % Save the project structure in the running arguments
@@ -61,19 +53,24 @@ RunArg.outDir_  = outDirectory;
 
 %% Execute the post-processing code
 
-Geo = extract_geometry(RunArg);
+[tSample, Geom, NSpeed, NForce] = extract_nodal_values(RunArg);
 
-Displ = compute_displacements(RunArg, Geo);
+Displ = compute_displacements(Geom);
 
-Diam = compute_diameters(Displ);
+Perim = compute_perimeters(Displ);
+
+if contains(RunArg.outs, 'p')
+	plot_displacements(Geom, Displ, tSample, RunArg.tFocus, true);
+	plot_perimeter_evo(tSample, Perim{2});
+end
 
 %% Save the generated data
 
 if contains(RunArg.outs, 's')
-	save(fullfile(outDirectory, "runningArguments.mat"), "RunArg");
-	save(fullfile(outDirectory, "geometry.mat"),         "Geo");
-	save(fullfile(outDirectory, "displacements.mat"),    "Displ");
-	save(fullfile(outDirectory, "diameters.mat"),        "Diam");
+	thisOut = fullfile(RunArg.outDir_, RunArg.sName);
+	save( ...
+		fullfile(thisOut), ...
+		"RunArg", "tSample", "Geom", "NSpeed", "NForce", "Displ", "Perim");
 end
 
 end

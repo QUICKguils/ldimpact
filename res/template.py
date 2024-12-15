@@ -407,12 +407,20 @@ time_step = 1E-5
 tsm.setInitialTime(initial_time, time_step)
 
 # Intermediate and/or final time
-final_time = 3E-4
+# final_time = 2E-4  # for small tests
+# final_time = 2E-3  # after bounce
+final_time = 7E-4
+
 # WARN:
 # Low enough to make sure that the rings ne se traversent pas.
 # Lier ça à la vitesse d'impact. Lier à la profondeur de contact, pour bien faire.
 max_time_step = 1E-4
-n_intermediate = 5
+
+# Number of intemediate simulation state to save.
+# Those are saved in compressed bfac.gz files.
+n_intermediate = 199
+
+# Here, next specified time is just the final time
 tsm.setNextTime(final_time, n_intermediate, max_time_step)
 
 # Set the residual tolerance
@@ -420,18 +428,30 @@ res_tol = 1E-4  # default is 1E-4 (chap. 11)
 mim.setResidualTolerance(res_tol)
 
 # 7. ARCHIVING {{{1
-# TODO: better organize this archiving section
 
-# Keep track of the number of fac values managers
-# that are instantiated
+# NOTE:
+# more gentel for the disk to save or like 200 FAC steps throught the fac_values_manager
+# than to save every time step through the values_manager.
+
+# Keep track of the number of values managers
+# and fac values managers that are instantiated
 id_fac = 1
 
+# Time sample of the simulation recordings
+fac_values_manager.add(id_fac, MiscValueExtractor(metafor, EXT_T), 'tSample')
+id_fac += 1
+
 # Dict gathering the nodal fields to archive
+# over the entire problem geometry.
 dbnodal_fields = {
-    "AB_TX": Field1D(TX, AB),
-    "AB_TY": Field1D(TY, AB),
-    "RE_TX": Field1D(TX, RE),
-    "RE_TY": Field1D(TY, RE),
+    "AB_TX":  Field1D(TX, AB),
+    "AB_TY":  Field1D(TY, AB),
+    "RE_TX":  Field1D(TX, RE),
+    "RE_TY":  Field1D(TY, RE),
+    "GV_TX":  Field1D(TX,GV),
+    "GV_TY":  Field1D(TY,GV),
+    "GF1_TX": Field1D(TX,GF1),
+    "GF1_TY": Field1D(TY,GF1),
 }
 
 # Save the desired nodal fields for the whole geometry
