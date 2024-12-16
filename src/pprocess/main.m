@@ -59,9 +59,12 @@ Displ = compute_displacements(Geom);
 
 Perim = compute_perimeters(Displ);
 
+Force = compute_forces(NForce);
+
 if contains(RunArg.outs, 'p')
 	plot_displacements(Geom, Displ, tSample, RunArg.tFocus, true);
-	plot_perimeter_evo(tSample, Perim{2});
+	plot_perimeters_evo(tSample, Perim{2});
+	plot_forces_evo(tSample, Force{2});
 end
 
 %% Save the generated data
@@ -70,7 +73,7 @@ if contains(RunArg.outs, 's')
 	thisOut = fullfile(RunArg.outDir_, RunArg.sName);
 	save( ...
 		fullfile(thisOut), ...
-		"RunArg", "tSample", "Geom", "NSpeed", "NForce", "Displ", "Perim");
+		"RunArg", "tSample", "Geom", "NSpeed", "NForce", "Displ", "Perim", "Force");
 end
 
 end

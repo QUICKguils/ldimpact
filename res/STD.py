@@ -7,7 +7,7 @@ For each of the simulations that were carried out, this file is copied
 in the res/ directory, under an appropriate name. This file is then
 modified accordingly to the parameters of the desired problem.
 """
-
+import math
 from wrap import *
 
 # Instantiate the main Metafor and Domain objects
@@ -90,7 +90,7 @@ class Ring():
         self.id = Ring.id_ring
         Ring.id_ring += 1
 
-    def build_geometry(self, center, inner_radius, outer_radius):
+    def build_geometry(self, center, inner_radius, outer_radius, ring_number):
         self.x  = center[0]
         self.y  = center[1]
         self.ri = inner_radius
@@ -98,15 +98,79 @@ class Ring():
 
         point = [None] * 9
         # Inner ring points
-        point[1] = pointset.define(Ring.id_point+0, self.x-self.ri, self.y)
-        point[2] = pointset.define(Ring.id_point+1, self.x,         self.y+self.ri)
-        point[3] = pointset.define(Ring.id_point+2, self.x+self.ri, self.y)
-        point[4] = pointset.define(Ring.id_point+3, self.x,         self.y-self.ri)
-        # Outer ring points
-        point[5] = pointset.define(Ring.id_point+4, self.x-self.ro, self.y)
-        point[6] = pointset.define(Ring.id_point+5, self.x,         self.y+self.ro)
-        point[7] = pointset.define(Ring.id_point+6, self.x+self.ro, self.y)
-        point[8] = pointset.define(Ring.id_point+7, self.x,         self.y-self.ro)
+    
+
+        if ring_number==3:  # Cas pour ring_3
+            # Définir les angles en radians
+            angle_15 =  3* math.pi / 2# 270° en radians
+            angle_37 = 2 *math.pi # 360° en radians
+            # Points du cercle intérieur
+            x1 = self.x + self.ri * math.cos(angle_15)
+            y1 = self.y + self.ri * math.sin(angle_15)
+            point[1] = pointset.define(Ring.id_point + 0, x1, y1)
+    
+            point[2] = pointset.define(Ring.id_point + 1, self.x, self.y + self.ri)
+    
+            x3 = self.x + self.ri * math.cos(angle_37)
+            y3 = self.y + self.ri * math.sin(angle_37)
+            point[3] = pointset.define(Ring.id_point + 2, x3, y3)
+    
+            point[4] = pointset.define(Ring.id_point + 3, self.x, self.y - self.ri)
+    
+            # Points du cercle extérieur
+            x5 = self.x + self.ro * math.cos(angle_15)
+            y5 = self.y + self.ro * math.sin(angle_15)
+            point[5] = pointset.define(Ring.id_point + 4, x5, y5)
+    
+            point[6] = pointset.define(Ring.id_point + 5, self.x, self.y + self.ro)
+    
+            x7 = self.x + self.ro * math.cos(angle_37)
+            y7 = self.y + self.ro * math.sin(angle_37)
+            point[7] = pointset.define(Ring.id_point + 6, x7, y7)
+    
+            point[8] = pointset.define(Ring.id_point + 7, self.x, self.y - self.ro)
+        
+        elif ring_number==1:  # Cas pour ring_1 
+            # Définir les angles en radians
+            angle_15 =  7* math.pi / 6# 270° en radians
+            angle_37 = math.pi/3 # 360° en radians
+            # Points du cercle intérieur
+            x1 = self.x + self.ri * math.cos(angle_15)
+            y1 = self.y + self.ri * math.sin(angle_15)
+            point[1] = pointset.define(Ring.id_point + 0, x1, y1)
+    
+            point[2] = pointset.define(Ring.id_point + 1, self.x, self.y + self.ri)
+    
+            x3 = self.x + self.ri * math.cos(angle_37)
+            y3 = self.y + self.ri * math.sin(angle_37)
+            point[3] = pointset.define(Ring.id_point + 2, x3, y3)
+    
+            point[4] = pointset.define(Ring.id_point + 3, self.x, self.y - self.ri)
+    
+            # Points du cercle extérieur
+            x5 = self.x + self.ro * math.cos(angle_15)
+            y5 = self.y + self.ro * math.sin(angle_15)
+            point[5] = pointset.define(Ring.id_point + 4, x5, y5)
+    
+            point[6] = pointset.define(Ring.id_point + 5, self.x, self.y + self.ro)
+    
+            x7 = self.x + self.ro * math.cos(angle_37)
+            y7 = self.y + self.ro * math.sin(angle_37)
+            point[7] = pointset.define(Ring.id_point + 6, x7, y7)
+    
+            point[8] = pointset.define(Ring.id_point + 7, self.x, self.y - self.ro)
+        else:   # Cas pour ring_2
+            # Points du cercle intérieur
+            point[1] = pointset.define(Ring.id_point + 0, self.x - self.ri, self.y)
+            point[2] = pointset.define(Ring.id_point + 1, self.x, self.y + self.ri)
+            point[3] = pointset.define(Ring.id_point + 2, self.x + self.ri, self.y)
+            point[4] = pointset.define(Ring.id_point + 3, self.x, self.y - self.ri)
+    
+            # Points du cercle extérieur
+            point[5] = pointset.define(Ring.id_point + 4, self.x - self.ro, self.y)
+            point[6] = pointset.define(Ring.id_point + 5, self.x, self.y + self.ro)
+            point[7] = pointset.define(Ring.id_point + 6, self.x + self.ro, self.y)
+            point[8] = pointset.define(Ring.id_point + 7, self.x, self.y - self.ro)
 
         curve = [None] * 7
         # Half inner rings
@@ -146,12 +210,12 @@ class Ring():
         self.wire = wire
         self.side = side
 
-    def build_mesh(self, nelem_radial=5, nelem_contour=80):
+    def build_mesh(self, nelem_radial, nelem_contour, nelem_contour_contact):
         # Meshing the Curve objects
         SimpleMesher1D(self.curve[1]).execute(nelem_contour)
-        SimpleMesher1D(self.curve[2]).execute(nelem_contour)
+        SimpleMesher1D(self.curve[2]).execute(nelem_contour_contact)
         SimpleMesher1D(self.curve[3]).execute(nelem_contour)
-        SimpleMesher1D(self.curve[4]).execute(nelem_contour)
+        SimpleMesher1D(self.curve[4]).execute(nelem_contour_contact)
         SimpleMesher1D(self.curve[5]).execute(nelem_radial)
         SimpleMesher1D(self.curve[6]).execute(nelem_radial)
 
@@ -178,7 +242,7 @@ class Ring():
         # Properties of the finite elements
         elem_prop = ElementProperties(elem_type)
         elem_prop.put(MATERIAL, self.id_constitutive_material)
-        elem_prop.put(CAUCHYMECHVOLINTMETH, VES_CMVIM_SRIPR)
+        elem_prop.put(CAUCHYMECHVOLINTMETH, VES_CMVIM_STD)
 
         # Build the continuum of elements
         field_app = FieldApplicator(self.id_field)
@@ -246,14 +310,14 @@ ring_3 = Ring()
 # - center       = (-7.9, 8.5) | (7.9, -8.5) | (0, 0)
 # - inner_radius = 8           | 10          | 26
 # - outer_radius = 10          | 12          | 30
-ring_1.build_geometry(center=(-7.9,  8.5), inner_radius=8,  outer_radius=10)
-ring_2.build_geometry(center=( 7.9, -8.5), inner_radius=10, outer_radius=12)
-ring_3.build_geometry(center=( 0,    0),   inner_radius=26, outer_radius=30)
+ring_1.build_geometry(center=(-7.9,  8.5), inner_radius=8,  outer_radius=10, ring_number=1)
+ring_2.build_geometry(center=( 7.9, -8.5), inner_radius=10, outer_radius=12, ring_number=2)
+ring_3.build_geometry(center=( 0,    0),   inner_radius=26, outer_radius=30, ring_number=3)
 
 # Build the meshes
-ring_1.build_mesh(nelem_radial=3, nelem_contour=30)
-ring_2.build_mesh(nelem_radial=3, nelem_contour=30)
-ring_3.build_mesh(nelem_radial=3, nelem_contour=80)
+ring_1.build_mesh(nelem_radial=4, nelem_contour=20, nelem_contour_contact=80)
+ring_2.build_mesh(nelem_radial=5, nelem_contour=80, nelem_contour_contact=80)
+ring_3.build_mesh(nelem_radial=3, nelem_contour=80, nelem_contour_contact=80)
 
 # Build the constitutive materials
 # INFO: reference paper values:
@@ -394,33 +458,27 @@ def set_initial_speed(ring: Ring, v0_x, v0_y):
 # Give initial speed to the inner ring 1.
 # INFO: reference paper values: (30mm/ms, -30mm/ms)
 set_initial_speed(ring_1, 30E3, -30E3)
-
+v_initial_speed=30E3 #mm/ms
+epaisseur_ring_1=2 #mm
 # 6. TIME INTEGRATION {{{1
-
+v_initial_speed=30E3 #mm/ms
+epaisseur_ring_1=2 #mm
 ti = AlphaGeneralizedTimeIntegration(metafor)
 metafor.setTimeIntegration(ti)
 
 # Initial time and time step
 initial_time = 0.0
 # WARN: boman: make this relative to the impact speed. Explain in report.
-time_step = 1E-5
+time_step = 1/2*epaisseur_ring_1/v_initial_speed
 tsm.setInitialTime(initial_time, time_step)
 
 # Intermediate and/or final time
-# final_time = 2E-4  # for small tests
-# final_time = 2E-3  # after bounce
 final_time = 7E-4
-
 # WARN:
 # Low enough to make sure that the rings ne se traversent pas.
 # Lier ça à la vitesse d'impact. Lier à la profondeur de contact, pour bien faire.
-max_time_step = 1E-4
-
-# Number of intemediate simulation state to save.
-# Those are saved in compressed bfac.gz files.
-n_intermediate = 199
-
-# Here, next specified time is just the final time
+max_time_step = 1/2*epaisseur_ring_1/v_initial_speed
+n_intermediate = 5
 tsm.setNextTime(final_time, n_intermediate, max_time_step)
 
 # Set the residual tolerance
@@ -428,30 +486,18 @@ res_tol = 1E-4  # default is 1E-4 (chap. 11)
 mim.setResidualTolerance(res_tol)
 
 # 7. ARCHIVING {{{1
+# TODO: better organize this archiving section
 
-# NOTE:
-# more gentel for the disk to save or like 200 FAC steps throught the fac_values_manager
-# than to save every time step through the values_manager.
-
-# Keep track of the number of values managers
-# and fac values managers that are instantiated
+# Keep track of the number of fac values managers
+# that are instantiated
 id_fac = 1
 
-# Time sample of the simulation recordings
-fac_values_manager.add(id_fac, MiscValueExtractor(metafor, EXT_T), 'tSample')
-id_fac += 1
-
 # Dict gathering the nodal fields to archive
-# over the entire problem geometry.
 dbnodal_fields = {
-    "AB_TX":  Field1D(TX, AB),
-    "AB_TY":  Field1D(TY, AB),
-    "RE_TX":  Field1D(TX, RE),
-    "RE_TY":  Field1D(TY, RE),
-    "GV_TX":  Field1D(TX,GV),
-    "GV_TY":  Field1D(TY,GV),
-    "GF1_TX": Field1D(TX,GF1),
-    "GF1_TY": Field1D(TY,GF1),
+    "AB_TX": Field1D(TX, AB),
+    "AB_TY": Field1D(TY, AB),
+    "RE_TX": Field1D(TX, RE),
+    "RE_TY": Field1D(TY, RE),
 }
 
 # Save the desired nodal fields for the whole geometry
