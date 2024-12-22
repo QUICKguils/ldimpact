@@ -8,6 +8,8 @@ in the res/ directory, under an appropriate name. This file is then
 modified accordingly to the parameters of the desired problem.
 """
 
+import math
+
 from wrap import *
 
 # Instantiate the main Metafor and Domain objects
@@ -61,6 +63,11 @@ mim = metafor.getMechanicalIterationManager()
 values_manager = metafor.getValuesManager()
 fac_values_manager = metafor.getFacValuesManager()
 
+# Use Metafor multiprocessing capabilities
+StrVectorBase.useTBB()
+StrMatrixBase.useTBB()
+ContactInteraction.useTBB()
+
 # 2. DEFINE AND IMPLEMENT THE RING CLASS {{{1
 
 # INFO:
@@ -70,11 +77,11 @@ fac_values_manager = metafor.getFacValuesManager()
 class Ring():
     """Ring -- Implement a 2D ring.
 
-        The bare Ring class initializes a Ring object by assigning it a unique
-        identification label.
+    The bare Ring class initializes a Ring object by assigning it
+    a unique identification label.
 
-        Several methods can then be used to build the related metafor object,
-        such as the geometry, the mesh, the material, etc.
+    Several methods can then be used to build the related metafor object,
+    such as the geometry, the mesh, the material, etc.
     """
 
     # Keep track of numeric labels assigned to the Metafor elements
@@ -90,25 +97,49 @@ class Ring():
         self.id = Ring.id_ring
         Ring.id_ring += 1
 
-    def build_geometry(self, center, inner_radius, outer_radius):
-        self.x  = center[0]
-        self.y  = center[1]
+    def build_geometry(self, center, inner_radius, outer_radius, alpha=180, theta=0):
         self.ri = inner_radius
         self.ro = outer_radius
+        self.thickness = self.ro - self.ri
 
+        _point = [(0, 0)] * 9
         point = [None] * 9
-        # Inner ring points
-        point[1] = pointset.define(Ring.id_point+0, self.x-self.ri, self.y)
-        point[2] = pointset.define(Ring.id_point+1, self.x,         self.y+self.ri)
-        point[3] = pointset.define(Ring.id_point+2, self.x+self.ri, self.y)
-        point[4] = pointset.define(Ring.id_point+3, self.x,         self.y-self.ri)
-        # Outer ring points
-        point[5] = pointset.define(Ring.id_point+4, self.x-self.ro, self.y)
-        point[6] = pointset.define(Ring.id_point+5, self.x,         self.y+self.ro)
-        point[7] = pointset.define(Ring.id_point+6, self.x+self.ro, self.y)
-        point[8] = pointset.define(Ring.id_point+7, self.x,         self.y-self.ro)
+
+        sina, cosa = math.sin(math.radians(alpha/2)), math.cos(math.radians(alpha/2))
+        sint, cost = math.sin(math.radians(theta)), math.cos(math.radians(theta))
+
+        # Apply the side delimitation, specified by the aperture angle alpha
+        _point[1] = (-self.ri*sina, -self.ri*cosa)
+        _point[3] = (+self.ri*sina, -self.ri*cosa)
+        _point[5] = (-self.ro*sina, -self.ro*cosa)
+        _point[7] = (+self.ro*sina, -self.ro*cosa)
+
+        # Ohter four points, at midway of each arc segments
+        _point[2] = (0, +self.ri)
+        _point[4] = (0, -self.ri)
+        _point[6] = (0, +self.ro)
+        _point[8] = (0, -self.ro)
+
+        # Apply the rotation, specified by the rotation angle theta
+        for idx, pt in enumerate(_point):
+            _point[idx] = (cost*pt[0] - sint*pt[1], sint*pt[0] + cost*pt[1])
+
+        # Apply the translation, specified by the ring center
+        for idx, pt in enumerate(_point):
+            _point[idx] = (pt[0]+center[0], pt[1]+center[1])
+
+        # Define the computed points in Metafor
+        point[1] = pointset.define(Ring.id_point+0, *_point[1])
+        point[2] = pointset.define(Ring.id_point+1, *_point[2])
+        point[3] = pointset.define(Ring.id_point+2, *_point[3])
+        point[4] = pointset.define(Ring.id_point+3, *_point[4])
+        point[5] = pointset.define(Ring.id_point+4, *_point[5])
+        point[6] = pointset.define(Ring.id_point+5, *_point[6])
+        point[7] = pointset.define(Ring.id_point+6, *_point[7])
+        point[8] = pointset.define(Ring.id_point+7, *_point[8])
 
         curve = [None] * 7
+
         # Half inner rings
         curve[1] = curveset.add(Arc(Ring.id_curve,   point[1], point[2], point[3]))
         curve[2] = curveset.add(Arc(Ring.id_curve+1, point[3], point[4], point[1]))
@@ -120,12 +151,14 @@ class Ring():
         curve[6] = curveset.add(Line(Ring.id_curve+5, point[3], point[7]))
 
         wire = [None] * 3
+
         # Upper half ring
         wire[1] = wireset.add(Wire(Ring.id_wire,   [curve[5], curve[1], curve[6], curve[3]]))
         # Lower half ring
         wire[2] = wireset.add(Wire(Ring.id_wire+1, [curve[5], curve[4], curve[6], curve[2]]))
 
         side = [None] * 3
+
         # Upper half ring
         side[1] = sideset.add(Side(Ring.id_side,   [wire[1]]))
         # Lower half ring
@@ -146,12 +179,12 @@ class Ring():
         self.wire = wire
         self.side = side
 
-    def build_mesh(self, nelem_radial=5, nelem_contour=80):
+    def build_mesh(self, nelem_radial=5, nelem_contour_coarse=40, nelem_contour_fine=40):
         # Meshing the Curve objects
-        SimpleMesher1D(self.curve[1]).execute(nelem_contour)
-        SimpleMesher1D(self.curve[2]).execute(nelem_contour)
-        SimpleMesher1D(self.curve[3]).execute(nelem_contour)
-        SimpleMesher1D(self.curve[4]).execute(nelem_contour)
+        SimpleMesher1D(self.curve[1]).execute(nelem_contour_coarse)
+        SimpleMesher1D(self.curve[2]).execute(nelem_contour_fine)
+        SimpleMesher1D(self.curve[3]).execute(nelem_contour_coarse)
+        SimpleMesher1D(self.curve[4]).execute(nelem_contour_fine)
         SimpleMesher1D(self.curve[5]).execute(nelem_radial)
         SimpleMesher1D(self.curve[6]).execute(nelem_radial)
 
@@ -236,31 +269,53 @@ class Ring():
 
 # 3. CREATE THE THREE RINGS {{{1
 
-# Instantiate the three main Ring objects
+# 3.1. Instantiate the three main Ring objects
+
 ring_1 = Ring()
 ring_2 = Ring()
 ring_3 = Ring()
 
-# Build the geometries
+# 3.2. Build the geometries
+#
 # INFO: reference paper values:
 # - center       = (-7.9, 8.5) | (7.9, -8.5) | (0, 0)
 # - inner_radius = 8           | 10          | 26
 # - outer_radius = 10          | 12          | 30
-ring_1.build_geometry(center=(-7.9,  8.5), inner_radius=8,  outer_radius=10)
-ring_2.build_geometry(center=( 7.9, -8.5), inner_radius=10, outer_radius=12)
-ring_3.build_geometry(center=( 0,    0),   inner_radius=26, outer_radius=30)
 
-# Build the meshes
-ring_1.build_mesh(nelem_radial=3, nelem_contour=30)
-ring_2.build_mesh(nelem_radial=3, nelem_contour=30)
-ring_3.build_mesh(nelem_radial=3, nelem_contour=80)
+ring_1.build_geometry(center=(-7.9,  8.5), inner_radius=8,  outer_radius=10, alpha=180, theta=45)
+ring_2.build_geometry(center=( 7.9, -8.5), inner_radius=10, outer_radius=12, alpha=180, theta=0)
+ring_3.build_geometry(center=( 0,    0),   inner_radius=26, outer_radius=30, alpha=90, theta=45)
 
-# Build the constitutive materials
+# 3.3. Build the meshes
+
+# Mesh multiplication factor, to globally
+# increase or decrease the number of elements.
+mesh_mult = 3
+
+ring_1.build_mesh(
+    nelem_radial=1*mesh_mult,
+    nelem_contour_coarse=4*mesh_mult,
+    nelem_contour_fine=12*mesh_mult
+)
+ring_2.build_mesh(
+    nelem_radial=1*mesh_mult,
+    nelem_contour_coarse=12*mesh_mult,
+    nelem_contour_fine=12*mesh_mult
+)
+ring_3.build_mesh(
+    nelem_radial=1*mesh_mult,
+    nelem_contour_coarse=10*mesh_mult,
+    nelem_contour_fine=12*mesh_mult
+)
+
+# 3.4. Build the constitutive materials
+#
 # INFO: reference paper values:
 # - constitutive_material = ElastHypoMaterial,
 # - mass_density          = 1e-7  | 1e-8 | 1e-6
 # - elastic_modulus       = 10E3  | 2250 | 288E3
 # - poisson_ratio         = 0.125 | 0.125| 0.125
+
 ring_1.build_constitutive_material(
     constitutive_material = ElastHypoMaterial,
     mass_density          = 1e-7,
@@ -280,31 +335,41 @@ ring_3.build_constitutive_material(
     poisson_ratio         = 0.125
 )
 
-# Build the element types and fields
+# 3.5. Build the element types and fields
+
 ring_1.build_element(elem_type=Volume2DElement)
 ring_2.build_element(elem_type=Volume2DElement)
 ring_3.build_element(elem_type=Volume2DElement)
 
-# Build the contact laws (and associated materials)
+# 3.6. Build the contact laws (and associated materials)
+#
 # INFO: reference paper value: coef_frot = 0.3
+
+# Fraction of the ring tickness that should be used for the contact depth
+prof_contact_fraction = 1/4
+
+# Minimal depth of contact that is defined
+# Useful to dynamically set the time integration step
+min_prof_cont = min(ring_1.thickness, ring_2.thickness, ring_3.thickness) * prof_contact_fraction
+
 ring_1.build_coulomb_contact(
     pen_normale   = 1E6,
     pen_tangent   = 1E6,
-    prof_cont     = (ring_1.ro-ring_1.ri)/4,
+    prof_cont     = ring_1.thickness * prof_contact_fraction,
     coef_frot_dyn = 0.3,
     coef_frot_sta = 0.3
 )
 ring_2.build_coulomb_contact(
     pen_normale   = 1E6,
     pen_tangent   = 1E6,
-    prof_cont     = (ring_2.ro-ring_2.ri)/4,
+    prof_cont     = ring_2.thickness * prof_contact_fraction,
     coef_frot_dyn = 0.3,
     coef_frot_sta = 0.3
 )
 ring_3.build_coulomb_contact(
     pen_normale   = 1E6,
     pen_tangent   = 1E6,
-    prof_cont     = (ring_3.ro-ring_3.ri)/4,
+    prof_cont     = ring_3.thickness * prof_contact_fraction,
     coef_frot_dyn = 0.3,
     coef_frot_sta = 0.3
 )
@@ -379,7 +444,7 @@ ring_3.build_self_contact()
 
 # 5. BOUNDARY CONDITIONS AND INITIAL CONDITIONS {{{1
 
-# Dirichlet condition on outer side of ring_3
+# Dirichlet condition on outer side of ring 3
 domain.getLoadingSet().define(ring_3.curve[3], Field1D(TX, RE), 0.0)
 domain.getLoadingSet().define(ring_3.curve[3], Field1D(TY, RE), 0.0)
 domain.getLoadingSet().define(ring_3.curve[4], Field1D(TX, RE), 0.0)
@@ -391,30 +456,36 @@ def set_initial_speed(ring: Ring, v0_x, v0_y):
     initial_conditions.define(ring.side[2], Field1D(TX, GV), v0_x)
     initial_conditions.define(ring.side[2], Field1D(TY, GV), v0_y)
 
-# Give initial speed to the inner ring 1.
+# Give initial speed to the inner ring 1
 # INFO: reference paper values: (30mm/ms, -30mm/ms)
-set_initial_speed(ring_1, 30E3, -30E3)
+init_speed = (30E3, -30E3)
+init_speed_magnitude = math.sqrt(init_speed[0]**2 + init_speed[1]**2)
+set_initial_speed(ring_1, *init_speed)
 
 # 6. TIME INTEGRATION {{{1
 
 ti = AlphaGeneralizedTimeIntegration(metafor)
 metafor.setTimeIntegration(ti)
 
-# Initial time and time step
+# Initial time
 initial_time = 0.0
-# WARN: boman: make this relative to the impact speed. Explain in report.
-time_step = 1E-5
+
+# Initial time step.
+# Should be small enough so that the nodes of ring_1 do not jump over
+# the contact detection area of ring_2 between two time step.
+time_step = min_prof_cont / init_speed_magnitude
 tsm.setInitialTime(initial_time, time_step)
 
-# Intermediate and/or final time
+# Intermediate and/or final time.
 # final_time = 2E-4  # for small tests
 # final_time = 2E-3  # after bounce
 final_time = 7E-4
 
-# WARN:
-# Low enough to make sure that the rings ne se traversent pas.
-# Lier ça à la vitesse d'impact. Lier à la profondeur de contact, pour bien faire.
-max_time_step = 1E-4
+# Maximimum time step allowed.
+# As for the initial time step, the maximum time step
+# is chosen low enough to make sure that the ring nodes
+# will never jump over the contact detection area.
+max_time_step = min_prof_cont / init_speed_magnitude
 
 # Number of intemediate simulation state to save.
 # Those are saved in compressed bfac.gz files.
@@ -430,8 +501,9 @@ mim.setResidualTolerance(res_tol)
 # 7. ARCHIVING {{{1
 
 # NOTE:
-# more gentel for the disk to save or like 200 FAC steps throught the fac_values_manager
-# than to save every time step through the values_manager.
+# more gentle for the disk to save like 200 FAC steps
+# throught the fac_values_manager than to save every time step
+# through the values_manager.
 
 # Keep track of the number of values managers
 # and fac values managers that are instantiated
@@ -465,7 +537,7 @@ for id_field, field in dbnodal_fields.items():
 
 # DEBUG OPTIONS {{{1
 
-# Set here what has to be debugged.
+# Set and toggle here what has to be debugged.
 debug = {
     'geometry': False,
     'mesh': False,
