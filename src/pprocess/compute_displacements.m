@@ -1,8 +1,8 @@
 function Displ = compute_displacements(Geom)
 % COMPUTE_DISPLACEMENTS  Compute the displacements of the geometry.
 %
-% Arguments:
-%   Geom   (cell)       -- Geometrical data of the whole problem.
+% Argument:
+%   Geom (cell) -- Geometrical data of the whole problem.
 % Return:
 %   Displ (cell) -- Displacements of the rings.
 

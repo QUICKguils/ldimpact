@@ -53,18 +53,20 @@ RunArg.outDir_  = outDirectory;
 
 %% Execute the post-processing code
 
-[tSample, Geom, NSpeed, NForce] = extract_nodal_values(RunArg);
+[tSample, Geom, NSpeed, NFExt, NFInt] = extract_nodal_values(RunArg);
 
 Displ = compute_displacements(Geom);
 
 Perim = compute_perimeters(Displ);
 
-Force = compute_forces(NForce);
+FExt = compute_external_forces(NFExt);
+
+[MSpeed, MDispl] = compute_mean_motion(NSpeed, Displ);
+
+[NodeCount, Kin] = compute_kinetic(NSpeed);
 
 if contains(RunArg.outs, 'p')
 	plot_displacements(Geom, Displ, tSample, RunArg.tFocus, true);
-	plot_perimeters_evo(tSample, Perim{2});
-	plot_forces_evo(tSample, Force{2});
 end
 
 %% Save the generated data
@@ -73,7 +75,9 @@ if contains(RunArg.outs, 's')
 	thisOut = fullfile(RunArg.outDir_, RunArg.sName);
 	save( ...
 		fullfile(thisOut), ...
-		"RunArg", "tSample", "Geom", "NSpeed", "NForce", "Displ", "Perim", "Force");
+		"RunArg", "tSample", "Geom", "NSpeed", "NFExt", "NFInt", ...
+		"Displ", "Perim", "FExt", "MSpeed", "MDispl", "NodeCount", "Kin" ...
+	);
 end
 
 end

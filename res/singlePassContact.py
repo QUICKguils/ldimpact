@@ -1,11 +1,6 @@
-"""template -- Metafor description file template.
-
-This template is used as a reference Metafor description file,
-for running different simulations of the three-rings impact problem.
-
-For each of the simulations that were carried out, this file is copied
-in the res/ directory, under an appropriate name. This file is then
-modified accordingly to the parameters of the desired problem.
+"""
+Conpute the mutual contact with a single pass algorithm.
+This results in a mesh crossing the other.
 """
 
 import math
@@ -192,33 +187,16 @@ class Ring():
         TransfiniteMesher2D(self.side[1]).execute(True)
         TransfiniteMesher2D(self.side[2]).execute(True)
 
-    def build_elastic_material(
-            self,
+    def build_constitutive_material(
+            self, constitutive_material,
             mass_density, elastic_modulus, poisson_ratio):
         self.id_constitutive_material = Ring.id_material
 
-        materials.define(self.id_constitutive_material, ElastHypoMaterial)
+        materials.define(self.id_constitutive_material, constitutive_material)
         self.material = materials(self.id_constitutive_material)
         self.material.put(MASS_DENSITY,    mass_density)
         self.material.put(ELASTIC_MODULUS, elastic_modulus)
         self.material.put(POISSON_RATIO,   poisson_ratio)
-
-        Ring.id_material += 1
-
-    def build_perfectly_plastic_material(
-            self,
-            mass_density, elastic_modulus, poisson_ratio, ih_sigel):
-        self.id_constitutive_material = Ring.id_material
-
-        materials.define(self.id_constitutive_material, EvpIsoHHypoMaterial)
-        self.material = materials(self.id_constitutive_material)
-        self.material.put(MASS_DENSITY,    mass_density)
-        self.material.put(ELASTIC_MODULUS, elastic_modulus)
-        self.material.put(POISSON_RATIO,   poisson_ratio)
-        self.material.put(YIELD_NUM,       1)
-        self.law = laws.define(1, LinearIsotropicHardening)
-        self.law.put(IH_SIGEL, ih_sigel)
-        self.law.put(IH_H, 0.0)  # No isotropic hardening.
 
         Ring.id_material += 1
 
@@ -239,18 +217,9 @@ class Ring():
 
         Ring.id_interaction += 1
 
-    def build_frictionless_contact(self, pen_normale, prof_cont):
+    def build_frictionless_contact(self):
         self.id_contact_material = Ring.id_material
-
-        materials.define(self.id_contact_material, FrictionlessContactMaterial)
-
-        materials(self.id_contact_material).put(PEN_NORMALE, pen_normale)
-        materials(self.id_contact_material).put(PROF_CONT,   prof_cont)
-
-        self.contact_elem = ElementProperties(Contact2DElement)
-        self.contact_elem.put(MATERIAL, self.id_contact_material)
-        self.contact_elem.put(AREAINCONTACT, AIC_ONCE)  # This is the default anyways
-
+        # TODO: implement that if needed
         Ring.id_material += 1
 
     def build_coulomb_contact(
@@ -325,13 +294,13 @@ ring_1.build_mesh(
 )
 ring_2.build_mesh(
     nelem_radial=1*mesh_mult,
-    nelem_contour_coarse=12*mesh_mult,
-    nelem_contour_fine=12*mesh_mult
+    nelem_contour_coarse=8*mesh_mult,
+    nelem_contour_fine=8*mesh_mult
 )
 ring_3.build_mesh(
     nelem_radial=1*mesh_mult,
-    nelem_contour_coarse=10*mesh_mult,
-    nelem_contour_fine=12*mesh_mult
+    nelem_contour_coarse=8*mesh_mult,
+    nelem_contour_fine=8*mesh_mult
 )
 
 # 3.4. Build the constitutive materials
@@ -342,17 +311,20 @@ ring_3.build_mesh(
 # - elastic_modulus       = 10E3  | 2250 | 288E3
 # - poisson_ratio         = 0.125 | 0.125| 0.125
 
-ring_1.build_elastic_material(
+ring_1.build_constitutive_material(
+    constitutive_material = ElastHypoMaterial,
     mass_density          = 1e-7,
     elastic_modulus       = 10E3,
     poisson_ratio         = 0.125
 )
-ring_2.build_elastic_material(
+ring_2.build_constitutive_material(
+    constitutive_material = ElastHypoMaterial,
     mass_density          = 1e-8,
     elastic_modulus       = 2250,
     poisson_ratio         = 0.125
 )
-ring_3.build_elastic_material(
+ring_3.build_constitutive_material(
+    constitutive_material = ElastHypoMaterial,
     mass_density          = 1e-6,
     elastic_modulus       = 288E3,
     poisson_ratio         = 0.125
@@ -366,15 +338,7 @@ ring_3.build_element(elem_type=Volume2DElement)
 
 # 3.6. Build the contact laws (and associated materials)
 #
-# INFO: reference paper value:
-# coef_frot = 0.3
-# ring_1.build_coulomb_contact(
-#     pen_normale   = 1E6,
-#     pen_tangent   = 1E6,
-#     prof_cont     = ring_1.thickness * prof_contact_fraction,
-#     coef_frot_dyn = 0.3,
-#     coef_frot_sta = 0.3
-# )
+# INFO: reference paper value: coef_frot = 0.3
 
 # Fraction of the ring tickness that should be used for the contact depth
 prof_contact_fraction = 1/5
@@ -383,17 +347,26 @@ prof_contact_fraction = 1/5
 # Useful to dynamically set the time integration step
 min_prof_cont = min(ring_1.thickness, ring_2.thickness, ring_3.thickness) * prof_contact_fraction
 
-ring_1.build_frictionless_contact(
-    pen_normale = 1E6,
-    prof_cont   = ring_1.thickness * prof_contact_fraction,
+ring_1.build_coulomb_contact(
+    pen_normale   = 1E6,
+    pen_tangent   = 1E6,
+    prof_cont     = ring_1.thickness * prof_contact_fraction,
+    coef_frot_dyn = 0.3,
+    coef_frot_sta = 0.3
 )
-ring_2.build_frictionless_contact(
-    pen_normale = 1E6,
-    prof_cont   = ring_2.thickness * prof_contact_fraction,
+ring_2.build_coulomb_contact(
+    pen_normale   = 1E6,
+    pen_tangent   = 1E6,
+    prof_cont     = ring_2.thickness * prof_contact_fraction,
+    coef_frot_dyn = 0.3,
+    coef_frot_sta = 0.3
 )
-ring_3.build_frictionless_contact(
-    pen_normale = 1E6,
-    prof_cont   = ring_3.thickness * prof_contact_fraction,
+ring_3.build_coulomb_contact(
+    pen_normale   = 1E6,
+    pen_tangent   = 1E6,
+    prof_cont     = ring_3.thickness * prof_contact_fraction,
+    coef_frot_dyn = 0.3,
+    coef_frot_sta = 0.3
 )
 
 # 4. CONTACT INTERACTIONS {{{1
@@ -407,18 +380,22 @@ def build_outer_outer_contact(r1: Ring, r2: Ring):
     contact_33.setTool(r1.curve[3])
     contact_33.push(r2.curve[3])
     contact_33.addProperty(r1.contact_elem)
+    contact_33.setSinglePass()
 
     contact_44.setTool(r1.curve[4])
     contact_44.push(r2.curve[4])
     contact_44.addProperty(r1.contact_elem)
+    contact_44.setSinglePass()
 
     contact_34.setTool(r1.curve[3])
     contact_34.push(r2.curve[4])
     contact_34.addProperty(r1.contact_elem)
+    contact_34.setSinglePass()
 
     contact_43.setTool(r1.curve[4])
     contact_43.push(r2.curve[3])
     contact_43.addProperty(r1.contact_elem)
+    contact_43.setSinglePass()
 
     domain.getInteractionSet().add(contact_33)
     domain.getInteractionSet().add(contact_44)
@@ -436,18 +413,22 @@ def build_outer_inner_contact(outer: Ring, inner: Ring):
     contact_13.setTool(outer.curve[1])
     contact_13.push(inner.curve[3])
     contact_13.addProperty(inner.contact_elem)
+    contact_13.setSinglePass()
 
     contact_24.setTool(outer.curve[2])
     contact_24.push(inner.curve[4])
     contact_24.addProperty(inner.contact_elem)
+    contact_24.setSinglePass()
 
     contact_14.setTool(outer.curve[1])
     contact_14.push(inner.curve[4])
     contact_14.addProperty(inner.contact_elem)
+    contact_14.setSinglePass()
 
     contact_23.setTool(outer.curve[2])
     contact_23.push(inner.curve[3])
     contact_23.addProperty(inner.contact_elem)
+    contact_23.setSinglePass()
 
     domain.getInteractionSet().add(contact_13)
     domain.getInteractionSet().add(contact_24)
@@ -500,8 +481,8 @@ tsm.setInitialTime(initial_time, time_step)
 
 # Intermediate and/or final time.
 # final_time = 2E-4  # for small tests
-# final_time = 3E-3  # after bounce
-final_time = 8E-4  # Start to rebounce
+# final_time = 2E-3  # after bounce
+final_time = 7E-4
 
 # Maximimum time step allowed.
 # As for the initial time step, the maximum time step

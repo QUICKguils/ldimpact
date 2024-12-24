@@ -77,11 +77,11 @@ ContactInteraction.useTBB()
 class Ring():
     """Ring -- Implement a 2D ring.
 
-        The bare Ring class initializes a Ring object by assigning it a unique
-        identification label.
+    The bare Ring class initializes a Ring object by assigning it
+    a unique identification label.
 
-        Several methods can then be used to build the related metafor object,
-        such as the geometry, the mesh, the material, etc.
+    Several methods can then be used to build the related metafor object,
+    such as the geometry, the mesh, the material, etc.
     """
 
     # Keep track of numeric labels assigned to the Metafor elements
@@ -192,16 +192,33 @@ class Ring():
         TransfiniteMesher2D(self.side[1]).execute(True)
         TransfiniteMesher2D(self.side[2]).execute(True)
 
-    def build_constitutive_material(
-            self, constitutive_material,
+    def build_elastic_material(
+            self,
             mass_density, elastic_modulus, poisson_ratio):
         self.id_constitutive_material = Ring.id_material
 
-        materials.define(self.id_constitutive_material, constitutive_material)
+        materials.define(self.id_constitutive_material, ElastHypoMaterial)
         self.material = materials(self.id_constitutive_material)
         self.material.put(MASS_DENSITY,    mass_density)
         self.material.put(ELASTIC_MODULUS, elastic_modulus)
         self.material.put(POISSON_RATIO,   poisson_ratio)
+
+        Ring.id_material += 1
+
+    def build_perfectly_plastic_material(
+            self,
+            mass_density, elastic_modulus, poisson_ratio, ih_sigel):
+        self.id_constitutive_material = Ring.id_material
+
+        materials.define(self.id_constitutive_material, EvpIsoHHypoMaterial)
+        self.material = materials(self.id_constitutive_material)
+        self.material.put(MASS_DENSITY,    mass_density)
+        self.material.put(ELASTIC_MODULUS, elastic_modulus)
+        self.material.put(POISSON_RATIO,   poisson_ratio)
+        self.material.put(YIELD_NUM,       1)
+        self.law = laws.define(1, LinearIsotropicHardening)
+        self.law.put(IH_SIGEL, ih_sigel)
+        self.law.put(IH_H, 0.0)  # No isotropic hardening.
 
         Ring.id_material += 1
 
@@ -222,9 +239,18 @@ class Ring():
 
         Ring.id_interaction += 1
 
-    def build_frictionless_contact(self):
+    def build_frictionless_contact(self, pen_normale, prof_cont):
         self.id_contact_material = Ring.id_material
-        # TODO: implement that if needed
+
+        materials.define(self.id_contact_material, FrictionlessContactMaterial)
+
+        materials(self.id_contact_material).put(PEN_NORMALE, pen_normale)
+        materials(self.id_contact_material).put(PROF_CONT,   prof_cont)
+
+        self.contact_elem = ElementProperties(Contact2DElement)
+        self.contact_elem.put(MATERIAL, self.id_contact_material)
+        self.contact_elem.put(AREAINCONTACT, AIC_ONCE)  # This is the default anyways
+
         Ring.id_material += 1
 
     def build_coulomb_contact(
@@ -242,7 +268,7 @@ class Ring():
 
         self.contact_elem = ElementProperties(Contact2DElement)
         self.contact_elem.put(MATERIAL, self.id_contact_material)
-        self.contact_elem.put(AREAINCONTACT, AIC_ONCE)  # Maybe the default anyways
+        self.contact_elem.put(AREAINCONTACT, AIC_ONCE)  # This is the default anyways
 
         Ring.id_material += 1
 
@@ -316,20 +342,17 @@ ring_3.build_mesh(
 # - elastic_modulus       = 10E3  | 2250 | 288E3
 # - poisson_ratio         = 0.125 | 0.125| 0.125
 
-ring_1.build_constitutive_material(
-    constitutive_material = ElastHypoMaterial,
+ring_1.build_elastic_material(
     mass_density          = 1e-7,
     elastic_modulus       = 10E3,
     poisson_ratio         = 0.125
 )
-ring_2.build_constitutive_material(
-    constitutive_material = ElastHypoMaterial,
+ring_2.build_elastic_material(
     mass_density          = 1e-8,
     elastic_modulus       = 2250,
     poisson_ratio         = 0.125
 )
-ring_3.build_constitutive_material(
-    constitutive_material = ElastHypoMaterial,
+ring_3.build_elastic_material(
     mass_density          = 1e-6,
     elastic_modulus       = 288E3,
     poisson_ratio         = 0.125
@@ -343,35 +366,34 @@ ring_3.build_element(elem_type=Volume2DElement)
 
 # 3.6. Build the contact laws (and associated materials)
 #
-# INFO: reference paper value: coef_frot = 0.3
+# INFO: reference paper value:
+# coef_frot = 0.3
+# ring_1.build_coulomb_contact(
+#     pen_normale   = 1E6,
+#     pen_tangent   = 1E6,
+#     prof_cont     = ring_1.thickness * prof_contact_fraction,
+#     coef_frot_dyn = 0.3,
+#     coef_frot_sta = 0.3
+# )
 
 # Fraction of the ring tickness that should be used for the contact depth
-prof_contact_fraction = 1/4
+prof_contact_fraction = 1/5
 
 # Minimal depth of contact that is defined
 # Useful to dynamically set the time integration step
 min_prof_cont = min(ring_1.thickness, ring_2.thickness, ring_3.thickness) * prof_contact_fraction
 
-ring_1.build_coulomb_contact(
-    pen_normale   = 1E6,
-    pen_tangent   = 1E6,
-    prof_cont     = ring_1.thickness * prof_contact_fraction,
-    coef_frot_dyn = 0.3,
-    coef_frot_sta = 0.3
+ring_1.build_frictionless_contact(
+    pen_normale = 1E6,
+    prof_cont   = ring_1.thickness * prof_contact_fraction,
 )
-ring_2.build_coulomb_contact(
-    pen_normale   = 1E6,
-    pen_tangent   = 1E6,
-    prof_cont     = ring_2.thickness * prof_contact_fraction,
-    coef_frot_dyn = 0.3,
-    coef_frot_sta = 0.3
+ring_2.build_frictionless_contact(
+    pen_normale = 1E6,
+    prof_cont   = ring_2.thickness * prof_contact_fraction,
 )
-ring_3.build_coulomb_contact(
-    pen_normale   = 1E6,
-    pen_tangent   = 1E6,
-    prof_cont     = ring_3.thickness * prof_contact_fraction,
-    coef_frot_dyn = 0.3,
-    coef_frot_sta = 0.3
+ring_3.build_frictionless_contact(
+    pen_normale = 1E6,
+    prof_cont   = ring_3.thickness * prof_contact_fraction,
 )
 
 # 4. CONTACT INTERACTIONS {{{1
@@ -444,7 +466,7 @@ ring_3.build_self_contact()
 
 # 5. BOUNDARY CONDITIONS AND INITIAL CONDITIONS {{{1
 
-# Dirichlet condition on outer side of ring_3
+# Dirichlet condition on outer side of ring 3
 domain.getLoadingSet().define(ring_3.curve[3], Field1D(TX, RE), 0.0)
 domain.getLoadingSet().define(ring_3.curve[3], Field1D(TY, RE), 0.0)
 domain.getLoadingSet().define(ring_3.curve[4], Field1D(TX, RE), 0.0)
@@ -456,7 +478,7 @@ def set_initial_speed(ring: Ring, v0_x, v0_y):
     initial_conditions.define(ring.side[2], Field1D(TX, GV), v0_x)
     initial_conditions.define(ring.side[2], Field1D(TY, GV), v0_y)
 
-# Give initial speed to the inner ring 1.
+# Give initial speed to the inner ring 1
 # INFO: reference paper values: (30mm/ms, -30mm/ms)
 init_speed = (30E3, -30E3)
 init_speed_magnitude = math.sqrt(init_speed[0]**2 + init_speed[1]**2)
@@ -478,8 +500,8 @@ tsm.setInitialTime(initial_time, time_step)
 
 # Intermediate and/or final time.
 # final_time = 2E-4  # for small tests
-# final_time = 2E-3  # after bounce
-final_time = 7E-4
+# final_time = 3E-3  # after bounce
+final_time = 8E-4  # start to rebounce
 
 # Maximimum time step allowed.
 # As for the initial time step, the maximum time step
@@ -501,8 +523,9 @@ mim.setResidualTolerance(res_tol)
 # 7. ARCHIVING {{{1
 
 # NOTE:
-# more gentel for the disk to save or like 200 FAC steps throught the fac_values_manager
-# than to save every time step through the values_manager.
+# more gentle for the disk to save like 200 FAC steps
+# throught the fac_values_manager than to save every time step
+# through the values_manager.
 
 # Keep track of the number of values managers
 # and fac values managers that are instantiated
@@ -523,6 +546,8 @@ dbnodal_fields = {
     "GV_TY":  Field1D(TY,GV),
     "GF1_TX": Field1D(TX,GF1),
     "GF1_TY": Field1D(TY,GF1),
+    "GF2_TX": Field1D(TX,GF2),
+    "GF2_TY": Field1D(TY,GF2),
 }
 
 # Save the desired nodal fields for the whole geometry
@@ -536,7 +561,7 @@ for id_field, field in dbnodal_fields.items():
 
 # DEBUG OPTIONS {{{1
 
-# Set here what has to be debugged.
+# Set and toggle here what has to be debugged.
 debug = {
     'geometry': False,
     'mesh': False,

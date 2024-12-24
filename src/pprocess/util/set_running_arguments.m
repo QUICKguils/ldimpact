@@ -12,8 +12,8 @@ RunArg = struct();
 
 % ===== WRITE THE CONFIG HERE =====
 
-RunArg.sName = "template";
-RunArg.outs = 'ps';
+RunArg.sName = "plasticity";
+RunArg.outs = 's';
 RunArg.tFocus = 3E-4;
 
 % ==================================
